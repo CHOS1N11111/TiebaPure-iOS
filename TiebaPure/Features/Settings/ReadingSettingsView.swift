@@ -63,7 +63,7 @@ struct ReadingSettingsView: View {
             } header: {
                 Text("字体")
             } footer: {
-                Text("支持 TTF 和 OTF，单个文件不超过 20 MB，最多导入 20 个。字体只保存在本机应用私有目录。")
+                Text("内置圆体、衬线和等宽只改变有对应字形的西文；更换中文字体请导入包含中文字形的 TTF 或 OTF。单个文件不超过 20 MB，最多导入 20 个，字体只保存在本机应用私有目录。")
             }
 
             Section {
@@ -151,7 +151,7 @@ struct ReadingSettingsView: View {
         .fullScreenInteractiveNavigationPop()
         .fileImporter(
             isPresented: $showsFontImporter,
-            allowedContentTypes: [.font],
+            allowedContentTypes: ReaderFontImportPolicy.allowedContentTypes,
             allowsMultipleSelection: false,
             onCompletion: handleFontImport
         )

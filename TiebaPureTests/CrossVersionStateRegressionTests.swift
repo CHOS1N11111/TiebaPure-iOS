@@ -1,5 +1,6 @@
 import Foundation
 import UIKit
+import UniformTypeIdentifiers
 import XCTest
 @testable import TiebaPure
 
@@ -573,6 +574,32 @@ final class CrossVersionStateRegressionTests: XCTestCase,
         )
         XCTAssertEqual(serifFont.pointSize, standardFont.pointSize, accuracy: 0.01)
         XCTAssertNotEqual(serifFont.fontName, standardFont.fontName)
+    }
+
+    func testReaderFontImportPolicyExposesSelectableTTFAndOTFTypes() throws {
+        XCTAssertEqual(ReaderFontImportPolicy.supportedFileExtensions, ["ttf", "otf"])
+
+        let contentTypes = ReaderFontImportPolicy.allowedContentTypes
+        XCTAssertEqual(contentTypes.count, 2)
+        for (fileExtension, contentType) in zip(
+            ReaderFontImportPolicy.supportedFileExtensions,
+            contentTypes
+        ) {
+            let systemResolvedType = try XCTUnwrap(
+                UTType(filenameExtension: fileExtension)
+            )
+            XCTAssertEqual(contentType, systemResolvedType)
+            XCTAssertTrue(contentType.conforms(to: .data))
+            XCTAssertEqual(contentType.preferredFilenameExtension, fileExtension)
+            XCTAssertTrue(ReaderFontImportPolicy.supports(fileExtension: fileExtension.uppercased()))
+        }
+        XCTAssertFalse(ReaderFontImportPolicy.supports(fileExtension: "ttc"))
+    }
+
+    func testBuiltInReaderFontTitlesDescribeWesternGlyphScope() {
+        XCTAssertEqual(ReaderFontFamily.serif.title, "衬线（西文）")
+        XCTAssertEqual(ReaderFontFamily.rounded.title, "圆体（西文）")
+        XCTAssertEqual(ReaderFontFamily.monospaced.title, "等宽（西文）")
     }
 
     @MainActor

@@ -3,6 +3,7 @@ import CoreText
 import Foundation
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 enum ReaderFontSize: String, CaseIterable, Identifiable, Sendable {
     case small
@@ -90,9 +91,9 @@ struct ReaderFontFamily: RawRepresentable, Equatable, Hashable, Identifiable, Se
     var title: String {
         switch self {
         case .system: return "系统默认"
-        case .serif: return "衬线"
-        case .rounded: return "圆体"
-        case .monospaced: return "等宽"
+        case .serif: return "衬线（西文）"
+        case .rounded: return "圆体（西文）"
+        case .monospaced: return "等宽（西文）"
         default: return importedPostScriptName ?? "自定义字体"
         }
     }
@@ -548,6 +549,21 @@ struct ImportedReaderFont: Identifiable, Equatable, Codable, Sendable {
     var family: ReaderFontFamily? { .imported(postScriptName: postScriptName) }
 }
 
+enum ReaderFontImportPolicy {
+    static let supportedFileExtensions = ["ttf", "otf"]
+
+    static var allowedContentTypes: [UTType] {
+        let contentTypes = supportedFileExtensions.compactMap {
+            UTType(filenameExtension: $0, conformingTo: .data)
+        }
+        return contentTypes.isEmpty ? [.data] : contentTypes
+    }
+
+    static func supports(fileExtension: String) -> Bool {
+        supportedFileExtensions.contains(fileExtension.lowercased())
+    }
+}
+
 enum ReaderFontStoreError: LocalizedError, Equatable {
     case persistenceUnavailable
     case unsupportedFile
@@ -647,7 +663,7 @@ final class ReaderFontStore: ObservableObject {
 
     nonisolated static func prepareImport(from sourceURL: URL) throws -> PreparedReaderFontImport {
         let fileExtension = sourceURL.pathExtension.lowercased()
-        guard ["ttf", "otf"].contains(fileExtension) else {
+        guard ReaderFontImportPolicy.supports(fileExtension: fileExtension) else {
             throw ReaderFontStoreError.unsupportedFile
         }
 
@@ -696,7 +712,7 @@ final class ReaderFontStore: ObservableObject {
               let directoryURL, let catalogFile else {
             throw ReaderFontStoreError.persistenceUnavailable
         }
-        guard ["ttf", "otf"].contains(prepared.fileExtension),
+        guard ReaderFontImportPolicy.supports(fileExtension: prepared.fileExtension),
               prepared.data.isEmpty == false,
               prepared.data.count <= Self.maximumFontByteCount,
               prepared.sha256.utf8.count == 64,
